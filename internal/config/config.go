@@ -33,8 +33,8 @@ func LoadConfig(logger *zap.Logger) *Config {
 		logger.Info("loading config")
 		instance = &Config{}
 
-		if err := cleanenv.ReadConfig("config.env", instance); err != nil {
-			logger.Error("failed to read config", zap.Error(err))
+		if err := cleanenv.ReadEnv(instance); err != nil {
+			logger.Error("failed to read config from env", zap.Error(err))
 		}
 	})
 

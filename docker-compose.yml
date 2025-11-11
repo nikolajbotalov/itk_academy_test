@@ -1,0 +1,53 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - config.env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - wallet-net
+
+  db:
+    image: postgres:15
+    env_file:
+      - config.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-wallet}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-wallet}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - wallet-net
+
+  migrate:
+    image: migrate/migrate
+    volumes:
+      - ./migrations:/migrations
+    env_file:
+      - config.env
+    command: [
+      "-path", "/migrations",
+      "-database", "${DATABASE_URL:-postgres://postgres:admin@db:5432/wallet?sslmode=disable}",
+      "up"
+    ]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - wallet-net
+
+volumes:
+  pgdata:
+
+networks:
+  wallet-net:
